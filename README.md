@@ -8,6 +8,7 @@ Welcome to **LlanowarSetScout**, a tiny vibe-coded helper for Magic players who 
 - Talks to the [Scryfall API](https://scryfall.com/docs/api) to discover every set those cards have been printed in.
 - Caches card data locally under `scryfall_cache/` so repeat scouting is lightning fast.
 - Outputs a Markdown field report (`sets_cards.md` by default) grouped by set, ready to skim on your phone while you dig through bulk loot.
+- Automatically ignores the five basic lands—Llanowar scouts already know every Forest, after all.
 
 ## Requirements
 

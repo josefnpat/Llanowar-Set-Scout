@@ -3,27 +3,12 @@ import json
 import sys
 from pathlib import Path
 
-CACHE_DIR = Path("scryfall_cache")
-
-
-def get_card_name(line):
-    line = line.strip()
-    if not line:
-        return None
-    parts = line.split(None, 1)
-    if len(parts) > 1 and parts[0].isdigit():
-        return parts[1]
-    return line
-
-
-def get_card_quantity(line):
-    line = line.strip()
-    if not line:
-        return 1
-    parts = line.split(None, 1)
-    if len(parts) > 1 and parts[0].isdigit():
-        return int(parts[0])
-    return 1
+from scout_utils import (
+    BASIC_LANDS,
+    CACHE_DIR,
+    get_card_name,
+    get_card_quantity,
+)
 
 
 def load_printings(card_name):
@@ -55,6 +40,9 @@ def main():
     for line in lines:
         card_name = get_card_name(line)
         if not card_name:
+            continue
+        if card_name.lower() in BASIC_LANDS:
+            print(f"Llanowar scouts already know every {card_name}; skipping.")
             continue
         
         quantity = get_card_quantity(line)
