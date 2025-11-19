@@ -40,6 +40,7 @@ Everything else (virtualenv, dependencies) is handled for you.
    ```
    - First run creates and activates a virtual environment (`venv/`).
    - The script installs dependencies, fetches Scryfall data, and writes `sets_cards.md`.
+   - Run `./scout.sh --help` to see usage/examples.
 
 4. **Optional: custom files**  
    Pass a different card list or output file:
