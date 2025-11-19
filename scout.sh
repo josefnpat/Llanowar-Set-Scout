@@ -64,13 +64,38 @@ log() {
 
 if [ ! -d "$VENV_DIR" ]; then
     log "Planting a fresh Llanowar glade (virtual env)..."
-    python3 -m venv "$VENV_DIR"
+    set +e
+    python3 -m venv "$VENV_DIR" 2>&1 | grep -v "ensurepip" || true
+    set -e
 fi
 
-VENV_PYTHON="$VENV_DIR/bin/python3"
+if [ -f "$VENV_DIR/Scripts/python.exe" ]; then
+    VENV_PYTHON="$VENV_DIR/Scripts/python.exe"
+    VENV_ACTIVATE="$VENV_DIR/Scripts/activate"
+elif [ -f "$VENV_DIR/bin/python3" ]; then
+    VENV_PYTHON="$VENV_DIR/bin/python3"
+    VENV_ACTIVATE="$VENV_DIR/bin/activate"
+elif [ -f "$VENV_DIR/bin/python" ]; then
+    VENV_PYTHON="$VENV_DIR/bin/python"
+    VENV_ACTIVATE="$VENV_DIR/bin/activate"
+else
+    echo "Error: Could not find Python executable in venv" >&2
+    exit 1
+fi
+
+if ! "$VENV_PYTHON" -m pip --version >/dev/null 2>&1; then
+    log "Bootstrapping pip..."
+    if command -v curl >/dev/null 2>&1; then
+        curl -sS https://bootstrap.pypa.io/get-pip.py | "$VENV_PYTHON"
+    elif command -v wget >/dev/null 2>&1; then
+        wget -q -O- https://bootstrap.pypa.io/get-pip.py | "$VENV_PYTHON"
+    fi
+fi
 
 log "Rousing the Llanowar scouts (activating venv)..."
-source "$VENV_DIR/bin/activate" || true
+if [ -f "$VENV_ACTIVATE" ]; then
+    source "$VENV_ACTIVATE"
+fi
 
 log "Sharpening scout gear (installing dependencies)..."
 "$VENV_PYTHON" -m pip install -q --upgrade pip
