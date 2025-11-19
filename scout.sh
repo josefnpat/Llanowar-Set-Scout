@@ -3,15 +3,13 @@
 set -e
 
 VENV_DIR="venv"
-INPUT_FILE=${1:-example_cards.list}
-OUTPUT_FILE=${1:-sets_cards.md}
 
 print_help() {
     cat <<'EOF'
 LlanowarSetScout - vibe-coded mixed set lookup
 
 Usage:
-  ./scout.sh [cards_list] [output_markdown]
+  ./scout.sh [options] [cards_list] [output_markdown]
 
 Examples:
   ./scout.sh                         # uses example_cards.list -> sets_cards.md
@@ -20,34 +18,65 @@ Examples:
 
 Options:
   -h, --help    Show this help message and exit.
+  -q, --quiet   Suppress scout banter (minimal output).
 
 Scouts will create a virtualenv if needed, refresh the Scryfall cache,
 and produce a Markdown report of sets for each card.
 EOF
 }
 
-if [[ "$1" == "-h" || "$1" == "--help" ]]; then
-    print_help
-    exit 0
-fi
+QUIET=0
+ARGS=()
+
+for arg in "$@"; do
+    case "$arg" in
+        -h|--help)
+            print_help
+            exit 0
+            ;;
+        -q|--quiet)
+            QUIET=1
+            ;;
+        *)
+            ARGS+=("$arg")
+            ;;
+    esac
+done
+
+INPUT_FILE=${ARGS[0]:-example_cards.list}
+OUTPUT_FILE=${ARGS[1]:-sets_cards.md}
+
+log() {
+    if [ "$QUIET" -eq 0 ]; then
+        echo "$@"
+    fi
+}
 
 if [ ! -d "$VENV_DIR" ]; then
-    echo "Planting a fresh Llanowar glade (virtual env)..."
+    log "Planting a fresh Llanowar glade (virtual env)..."
     python3 -m venv "$VENV_DIR"
 fi
 
-echo "Rousing the Llanowar scouts (activating venv)..."
+log "Rousing the Llanowar scouts (activating venv)..."
 source "$VENV_DIR/bin/activate"
 
-echo "Sharpening scout gear (installing dependencies)..."
+log "Sharpening scout gear (installing dependencies)..."
 pip install -q --upgrade pip
 pip install -q -r requirements.txt
 
-echo "Sending scouts to map the multiverse (building cache)..."
-python generate.py "$INPUT_FILE"
+log "Sending scouts to map the multiverse (building cache)..."
+PYTHON_GENERATE_ARGS=("$INPUT_FILE")
+if [ "$QUIET" -eq 1 ]; then
+    PYTHON_GENERATE_ARGS+=("--quiet")
+fi
+python generate.py "${PYTHON_GENERATE_ARGS[@]}"
 
-echo "Recording set trails in $OUTPUT_FILE..."
-python convert_to_sets.py "$INPUT_FILE" "$OUTPUT_FILE"
+log "Recording set trails in $OUTPUT_FILE..."
+PYTHON_CONVERT_ARGS=("$INPUT_FILE" "$OUTPUT_FILE")
+if [ "$QUIET" -eq 1 ]; then
+    PYTHON_CONVERT_ARGS+=("--quiet")
+fi
+python convert_to_sets.py "${PYTHON_CONVERT_ARGS[@]}"
 
 deactivate
 

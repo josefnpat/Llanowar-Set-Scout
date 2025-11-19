@@ -41,12 +41,14 @@ Everything else (virtualenv, dependencies) is handled for you.
    - First run creates and activates a virtual environment (`venv/`).
    - The script installs dependencies, fetches Scryfall data, and writes `sets_cards.md`.
    - Run `./scout.sh --help` to see usage/examples.
+   - Add `--quiet` (or `-q`) to silence most Llanowar banter while still getting results.
 
 4. **Optional: custom files**  
    Pass a different card list or output file:
    ```bash
-   ./scout.sh my_cards.list      # writes sets_cards.md
-   ./scout.sh my_cards.list my_sets.md
+  ./scout.sh my_cards.list      # writes sets_cards.md
+  ./scout.sh my_cards.list my_sets.md
+  ./scout.sh -q my_cards.list   # quiet mode
    ```
 
 > 🧝 **Note:** Once the cache has the intel, you can re-run `convert_to_sets.py` alone to regenerate the Markdown without hitting the network.

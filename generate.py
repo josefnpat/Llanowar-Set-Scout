@@ -12,7 +12,11 @@ from scout_utils import (
     CACHE_DIR,
     get_card_name,
     get_card_quantity,
+    log,
+    parse_quiet_flag,
+    QUIET,
 )
+
 
 def get_cached_response(card_name):
     cache_file = CACHE_DIR / f"{card_name.replace('/', '_')}_card.json"
@@ -100,12 +104,14 @@ def get_all_printings(card_data, card_name):
     return all_sets
 
 def main():
-    if len(sys.argv) < 2:
-        print("Usage: python generate.py <input_file> [output_file]")
+    import scout_utils
+    positional, quiet = parse_quiet_flag(sys.argv[1:])
+    scout_utils.QUIET = quiet
+    if not positional:
+        print("Usage: python generate.py <input_file> [output_file] [--quiet]")
         sys.exit(1)
-    
-    input_file = sys.argv[1]
-    output_file = sys.argv[2] if len(sys.argv) > 2 else None
+    input_file = positional[0]
+    output_file = positional[1] if len(positional) > 1 else None
     
     if not os.path.exists(input_file):
         print(f"Error: {input_file} file not found")
@@ -122,13 +128,13 @@ def main():
         if not card_name:
             continue
         if card_name.lower() in BASIC_LANDS:
-            print(f"Scouts skip {card_name}; every Llanowar grove knows those paths.")
+            log(f"Scouts skip {card_name}; every Llanowar grove knows those paths.")
             continue
         
         quantity = get_card_quantity(line)
         card_quantities[card_name] = quantity
         
-        print(f"Llanowar scouts sighted {card_name} (x{quantity})")
+        log(f"Llanowar scouts sighted {card_name} (x{quantity})")
         
         card_data = query_scryfall(card_name)
         if not card_data:
@@ -147,7 +153,7 @@ def main():
                 set_names.append(set_name)
         card_sets[card_name] = set_names
         
-        print(f"  Scouts mapped {len(set_names)} set trail(s)")
+        log(f"  Scouts mapped {len(set_names)} set trail(s)")
     
     result = {
         'cards': card_sets,
@@ -163,9 +169,9 @@ def main():
         with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(result, f, indent=2, ensure_ascii=False)
         
-        print(f"\nScout logs stored at {output_path}")
+        log(f"\nScout logs stored at {output_path}")
     else:
-        print("\nLlanowar scouts have refreshed the cache")
+        log("\nLlanowar scouts have refreshed the cache")
 
 if __name__ == "__main__":
     main()

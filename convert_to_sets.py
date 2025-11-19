@@ -8,6 +8,9 @@ from scout_utils import (
     CACHE_DIR,
     get_card_name,
     get_card_quantity,
+    log,
+    parse_quiet_flag,
+    QUIET,
 )
 
 
@@ -20,12 +23,14 @@ def load_printings(card_name):
 
 
 def main():
-    if len(sys.argv) < 3:
-        print("Usage: python convert_to_sets.py <cards_list> <output_file>")
+    import scout_utils
+    positional, quiet = parse_quiet_flag(sys.argv[1:])
+    scout_utils.QUIET = quiet
+    if len(positional) < 2:
+        print("Usage: python convert_to_sets.py <cards_list> <output_file> [--quiet]")
         sys.exit(1)
-    
-    cards_list_file = sys.argv[1]
-    output_file = sys.argv[2]
+    cards_list_file = positional[0]
+    output_file = positional[1]
     
     if not Path(cards_list_file).exists():
         print(f"Error: {cards_list_file} file not found")
@@ -42,7 +47,7 @@ def main():
         if not card_name:
             continue
         if card_name.lower() in BASIC_LANDS:
-            print(f"Llanowar scouts already know every {card_name}; skipping.")
+            log(f"Llanowar scouts already know every {card_name}; skipping.")
             continue
         
         quantity = get_card_quantity(line)
@@ -84,8 +89,8 @@ def main():
         f.write('\n'.join(output_lines))
         f.write('\n')
     
-    print(f"Llanowar scouts cataloged {len(sets_to_cards)} set entries")
-    print(f"Field notes compiled in {output_file}")
+    log(f"Llanowar scouts cataloged {len(sets_to_cards)} set entries")
+    log(f"Field notes compiled in {output_file}")
 
 
 if __name__ == "__main__":
