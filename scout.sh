@@ -17,9 +17,10 @@ Examples:
   ./scout.sh my_cards.list my_sets.md
 
 Options:
-  -h, --help    Show this help message and exit.
-  -q, --quiet   Suppress scout banter (minimal output).
-  -r, --regrow  Force refresh of cached Scryfall data (regrow the cache).
+  -h, --help         Show this help message and exit.
+  -q, --quiet        Suppress scout banter (minimal output).
+  -r, --regrow       Force refresh of cached Scryfall data (regrow the cache).
+  -c, --chronological  Sort sets by year (oldest to newest) instead of alphabetically.
 
 Scouts will create a virtualenv if needed, refresh the Scryfall cache,
 and produce a Markdown report of sets for each card.
@@ -28,6 +29,7 @@ EOF
 
 QUIET=0
 REGROW=0
+CHRONOLOGICAL=0
 ARGS=()
 
 for arg in "$@"; do
@@ -41,6 +43,9 @@ for arg in "$@"; do
             ;;
         -r|--regrow)
             REGROW=1
+            ;;
+        -c|--chronological)
+            CHRONOLOGICAL=1
             ;;
         *)
             ARGS+=("$arg")
@@ -83,6 +88,9 @@ log "Recording set trails in $OUTPUT_FILE..."
 PYTHON_CONVERT_ARGS=("$INPUT_FILE" "$OUTPUT_FILE")
 if [ "$QUIET" -eq 1 ]; then
     PYTHON_CONVERT_ARGS+=("--quiet")
+fi
+if [ "$CHRONOLOGICAL" -eq 1 ]; then
+    PYTHON_CONVERT_ARGS+=("--chronological")
 fi
 python convert_to_sets.py "${PYTHON_CONVERT_ARGS[@]}"
 
