@@ -55,7 +55,7 @@ Everything else (virtualenv, dependencies) is handled for you.
    ./scout.sh -c my_cards.list   # sort sets chronologically by year
    ```
 
-> 🧝 **Note:** Once the cache has the intel, you can re-run `convert_to_sets.py` alone to regenerate the Markdown without hitting the network.
+> 🧝 **Note:** Once the elves have the intel, you can re-run `scout.sh` to regenerate the markdown without hitting the scryfall network.
 
 ## Output
 
