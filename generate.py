@@ -211,7 +211,7 @@ def get_all_printings(card_data, card_name):
 
 def main():
     import scout_utils
-    positional, quiet, regrow = parse_flags(sys.argv[1:])
+    positional, quiet, regrow, _ = parse_flags(sys.argv[1:])
     scout_utils.QUIET = quiet
     scout_utils.REGROW = regrow
     if not positional:

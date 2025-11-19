@@ -9,8 +9,9 @@ from scout_utils import (
     get_card_name,
     get_card_quantity,
     log,
-    parse_quiet_flag,
+    parse_convert_flags,
     QUIET,
+    CHRONOLOGICAL,
 )
 
 
@@ -24,10 +25,11 @@ def load_printings(card_name):
 
 def main():
     import scout_utils
-    positional, quiet = parse_quiet_flag(sys.argv[1:])
+    positional, quiet, chronological = parse_convert_flags(sys.argv[1:])
     scout_utils.QUIET = quiet
+    scout_utils.CHRONOLOGICAL = chronological
     if len(positional) < 2:
-        print("Usage: python convert_to_sets.py <cards_list> <output_file> [--quiet]")
+        print("Usage: python convert_to_sets.py <cards_list> <output_file> [--quiet] [-c|--chronological]")
         sys.exit(1)
     cards_list_file = positional[0]
     output_file = positional[1]
@@ -75,9 +77,29 @@ def main():
             print(f"  - {card}")
         print("Send scouts out with generate.py to refresh their intel.")
     
+    def get_sort_key(set_label):
+        """Extract year and set name for sorting. Returns (year, set_name)."""
+        if '(' in set_label and ')' in set_label:
+            parts = set_label.rsplit(' (', 1)
+            set_name = parts[0]
+            year_str = parts[1].rstrip(')')
+            try:
+                year = int(year_str)
+            except ValueError:
+                year = 9999
+        else:
+            set_name = set_label
+            year = 9999
+        return (year, set_name)
+    
     output_lines = ["# Sets", ""]
     
-    for set_name in sorted(sets_to_cards.keys()):
+    if scout_utils.CHRONOLOGICAL:
+        sorted_sets = sorted(sets_to_cards.keys(), key=get_sort_key)
+    else:
+        sorted_sets = sorted(sets_to_cards.keys())
+    
+    for set_name in sorted_sets:
         cards = sorted(sets_to_cards[set_name])
         output_lines.append(f"{set_name}:")
         output_lines.append("")

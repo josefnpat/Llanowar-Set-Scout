@@ -38,11 +38,12 @@ Everything else (virtualenv, dependencies) is handled for you.
    ```bash
    ./scout.sh
    ```
-   - First run creates and activates a virtual environment (`venv/`).
-   - The script installs dependencies, fetches Scryfall data, and writes `sets_cards.md`.
-   - Run `./scout.sh --help` to see usage/examples.
-   - Add `--quiet` (or `-q`) to silence most Llanowar banter while still getting results.
+   - On first run, the scouts plant a fresh Llanowar glade (virtual environment) and sharpen their gear (install dependencies).
+   - They venture into the multiverse, mapping every set trail your cards have walked, and compile their field notes into `sets_cards.md`.
+   - Run `./scout.sh --help` to see the full expedition guide.
+   - Add `--quiet` (or `-q`) to hush the scouts—they'll still map the trails, just without the chatter.
    - Add `--regrow` (or `-r`) to send scouts back to confirm the battlefield intel—useful when you suspect the terrain has changed.
+   - Add `--chronological` (or `-c`) to organize the field notes by the passage of time (oldest sets first) instead of alphabetically.
 
 4. **Optional: custom files and flags**  
    Pass a different card list or output file:
@@ -51,6 +52,7 @@ Everything else (virtualenv, dependencies) is handled for you.
   ./scout.sh my_cards.list my_sets.md
   ./scout.sh -q my_cards.list   # quiet mode
   ./scout.sh -r my_cards.list   # regrow cache (force fresh data)
+  ./scout.sh -c my_cards.list   # sort sets chronologically by year
    ```
 
 > 🧝 **Note:** Once the cache has the intel, you can re-run `convert_to_sets.py` alone to regenerate the Markdown without hitting the network.
