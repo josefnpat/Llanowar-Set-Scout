@@ -19,6 +19,7 @@ Examples:
 Options:
   -h, --help    Show this help message and exit.
   -q, --quiet   Suppress scout banter (minimal output).
+  -r, --regrow  Force refresh of cached Scryfall data (regrow the cache).
 
 Scouts will create a virtualenv if needed, refresh the Scryfall cache,
 and produce a Markdown report of sets for each card.
@@ -26,6 +27,7 @@ EOF
 }
 
 QUIET=0
+REGROW=0
 ARGS=()
 
 for arg in "$@"; do
@@ -36,6 +38,9 @@ for arg in "$@"; do
             ;;
         -q|--quiet)
             QUIET=1
+            ;;
+        -r|--regrow)
+            REGROW=1
             ;;
         *)
             ARGS+=("$arg")
@@ -68,6 +73,9 @@ log "Sending scouts to map the multiverse (building cache)..."
 PYTHON_GENERATE_ARGS=("$INPUT_FILE")
 if [ "$QUIET" -eq 1 ]; then
     PYTHON_GENERATE_ARGS+=("--quiet")
+fi
+if [ "$REGROW" -eq 1 ]; then
+    PYTHON_GENERATE_ARGS+=("--regrow")
 fi
 python generate.py "${PYTHON_GENERATE_ARGS[@]}"
 

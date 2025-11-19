@@ -42,13 +42,15 @@ Everything else (virtualenv, dependencies) is handled for you.
    - The script installs dependencies, fetches Scryfall data, and writes `sets_cards.md`.
    - Run `./scout.sh --help` to see usage/examples.
    - Add `--quiet` (or `-q`) to silence most Llanowar banter while still getting results.
+   - Add `--regrow` (or `-r`) to send scouts back to confirm the battlefield intel—useful when you suspect the terrain has changed.
 
-4. **Optional: custom files**  
+4. **Optional: custom files and flags**  
    Pass a different card list or output file:
    ```bash
   ./scout.sh my_cards.list      # writes sets_cards.md
   ./scout.sh my_cards.list my_sets.md
   ./scout.sh -q my_cards.list   # quiet mode
+  ./scout.sh -r my_cards.list   # regrow cache (force fresh data)
    ```
 
 > 🧝 **Note:** Once the cache has the intel, you can re-run `convert_to_sets.py` alone to regenerate the Markdown without hitting the network.

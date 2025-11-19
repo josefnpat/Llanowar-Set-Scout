@@ -13,9 +13,10 @@ from scout_utils import (
     get_card_name,
     get_card_quantity,
     log,
-    parse_quiet_flag,
+    parse_flags,
     QUIET,
 )
+import scout_utils
 
 
 def get_cached_response(card_name):
@@ -126,9 +127,10 @@ def query_scryfall_batch(card_names):
 
 def query_scryfall(card_name):
     """Query a single card (fallback for individual queries)."""
-    cached = get_cached_response(card_name)
-    if cached:
-        return cached
+    if not scout_utils.REGROW:
+        cached = get_cached_response(card_name)
+        if cached:
+            return cached
     
     url = f"https://api.scryfall.com/cards/named?exact={quote(card_name)}"
     
@@ -161,9 +163,10 @@ def get_all_printings(card_data, card_name):
     if not card_data or 'prints_search_uri' not in card_data:
         return []
     
-    cached_printings = get_cached_printings(card_name)
-    if cached_printings:
-        return cached_printings
+    if not scout_utils.REGROW:
+        cached_printings = get_cached_printings(card_name)
+        if cached_printings:
+            return cached_printings
     
     prints_url = card_data['prints_search_uri']
     all_sets = []
@@ -208,13 +211,17 @@ def get_all_printings(card_data, card_name):
 
 def main():
     import scout_utils
-    positional, quiet = parse_quiet_flag(sys.argv[1:])
+    positional, quiet, regrow = parse_flags(sys.argv[1:])
     scout_utils.QUIET = quiet
+    scout_utils.REGROW = regrow
     if not positional:
-        print("Usage: python generate.py <input_file> [output_file] [--quiet]")
+        print("Usage: python generate.py <input_file> [output_file] [--quiet] [-r|--regrow]")
         sys.exit(1)
     input_file = positional[0]
     output_file = positional[1] if len(positional) > 1 else None
+    
+    if regrow:
+        log("Llanowar scouts are regrowing the cache from fresh seeds...")
     
     if not os.path.exists(input_file):
         print(f"Error: {input_file} file not found")
@@ -240,10 +247,14 @@ def main():
         card_quantities[card_name] = quantity
         card_name_to_line[card_name] = line
         
-        cached = get_cached_response(card_name)
-        if not cached:
+        if scout_utils.REGROW:
             card_names_to_query.append(card_name)
+        else:
+            cached = get_cached_response(card_name)
+            if not cached:
+                card_names_to_query.append(card_name)
     
+    fresh_card_data = {}
     if card_names_to_query:
         log(f"Llanowar scouts preparing batch expedition for {len(card_names_to_query)} card(s)...")
         batch_size = 75
@@ -252,17 +263,30 @@ def main():
             batch = card_names_to_query[i:i + batch_size]
             log(f"  Batch querying {len(batch)} card(s)...")
             batch_results = query_scryfall_batch(batch)
+            fresh_card_data.update(batch_results)
             batch_found.update(batch_results.keys())
         
         for card_name in card_names_to_query:
-            if card_name not in batch_found and not get_cached_response(card_name):
-                log(f"  Falling back to individual query for {card_name}...")
-                query_scryfall(card_name)
+            if card_name not in batch_found:
+                if scout_utils.REGROW:
+                    log(f"  Falling back to individual query for {card_name}...")
+                    individual_result = query_scryfall(card_name)
+                    if individual_result:
+                        fresh_card_data[card_name] = individual_result
+                elif not get_cached_response(card_name):
+                    log(f"  Falling back to individual query for {card_name}...")
+                    individual_result = query_scryfall(card_name)
+                    if individual_result:
+                        fresh_card_data[card_name] = individual_result
     
     for card_name in card_name_to_line.keys():
         log(f"Llanowar scouts sighted {card_name} (x{card_quantities[card_name]})")
         
-        card_data = get_cached_response(card_name)
+        if scout_utils.REGROW:
+            card_data = fresh_card_data.get(card_name)
+        else:
+            card_data = fresh_card_data.get(card_name) or get_cached_response(card_name)
+        
         if not card_data:
             print(f"  Scout report: {card_name} is hiding from Scryfall intel")
             card_sets[card_name] = []

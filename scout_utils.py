@@ -3,8 +3,9 @@ from pathlib import Path
 CACHE_DIR = Path("scryfall_cache")
 BASIC_LANDS = {"plains", "island", "swamp", "mountain", "forest"}
 
-# Module-level quiet flag
+# Module-level flags
 QUIET = False
+REGROW = False
 
 
 def get_card_name(line: str) -> str | None:
@@ -39,14 +40,22 @@ def log(message: str) -> None:
         print(message)
 
 
-def parse_quiet_flag(args: list[str]) -> tuple[list[str], bool]:
-    """Extract --quiet/-q flags from args and return remaining args + quiet bool."""
+def parse_flags(args: list[str]) -> tuple[list[str], bool, bool]:
+    """Extract flags from args and return remaining args + (quiet, regrow) bools."""
     quiet = False
+    regrow = False
     positional = []
     for arg in args:
         if arg in ("-q", "--quiet"):
             quiet = True
+        elif arg in ("-r", "--regrow"):
+            regrow = True
         else:
             positional.append(arg)
+    return positional, quiet, regrow
+
+def parse_quiet_flag(args: list[str]) -> tuple[list[str], bool]:
+    """Extract --quiet/-q flags from args and return remaining args + quiet bool."""
+    positional, quiet, _ = parse_flags(args)
     return positional, quiet
 
