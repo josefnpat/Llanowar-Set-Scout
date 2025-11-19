@@ -44,7 +44,56 @@ def save_cached_printings(card_name, printings_data):
     with open(cache_file, 'w', encoding='utf-8') as f:
         json.dump(printings_data, f, indent=2, ensure_ascii=False)
 
+def query_scryfall_batch(card_names):
+    """Query multiple cards at once using Scryfall's collection endpoint."""
+    if not card_names:
+        return {}
+    
+    url = "https://api.scryfall.com/cards/collection"
+    identifiers = [{"name": name} for name in card_names]
+    payload = {"identifiers": identifiers}
+    
+    try:
+        response = requests.post(url, json=payload)
+        response.raise_for_status()
+        data = response.json()
+        
+        results = {}
+        not_found = set(card_names)
+        card_names_lower = {name.lower(): name for name in card_names}
+        
+        for card_data in data.get('data', []):
+            returned_name = card_data.get('name', '')
+            if not returned_name:
+                continue
+            
+            returned_lower = returned_name.lower()
+            matched_original = None
+            
+            for query_lower, query_original in card_names_lower.items():
+                if query_lower == returned_lower or query_lower in returned_lower or returned_lower in query_lower:
+                    matched_original = query_original
+                    break
+            
+            if matched_original:
+                results[matched_original] = card_data
+                save_cached_response(matched_original, card_data)
+                not_found.discard(matched_original)
+            else:
+                results[returned_name] = card_data
+                save_cached_response(returned_name, card_data)
+        
+        for card_name in not_found:
+            log(f"  Card not found in batch: {card_name}")
+        
+        time.sleep(0.1)
+        return results
+    except requests.exceptions.RequestException as e:
+        print(f"Error in batch query: {e}")
+        return {}
+
 def query_scryfall(card_name):
+    """Query a single card (fallback for individual queries)."""
     cached = get_cached_response(card_name)
     if cached:
         return cached
@@ -122,6 +171,8 @@ def main():
     
     card_sets = {}
     card_quantities = {}
+    card_names_to_query = []
+    card_name_to_line = {}
     
     for line in lines:
         card_name = get_card_name(line)
@@ -133,10 +184,31 @@ def main():
         
         quantity = get_card_quantity(line)
         card_quantities[card_name] = quantity
+        card_name_to_line[card_name] = line
         
-        log(f"Llanowar scouts sighted {card_name} (x{quantity})")
+        cached = get_cached_response(card_name)
+        if not cached:
+            card_names_to_query.append(card_name)
+    
+    if card_names_to_query:
+        log(f"Llanowar scouts preparing batch expedition for {len(card_names_to_query)} card(s)...")
+        batch_size = 75
+        batch_found = set()
+        for i in range(0, len(card_names_to_query), batch_size):
+            batch = card_names_to_query[i:i + batch_size]
+            log(f"  Batch querying {len(batch)} card(s)...")
+            batch_results = query_scryfall_batch(batch)
+            batch_found.update(batch_results.keys())
         
-        card_data = query_scryfall(card_name)
+        for card_name in card_names_to_query:
+            if card_name not in batch_found and not get_cached_response(card_name):
+                log(f"  Falling back to individual query for {card_name}...")
+                query_scryfall(card_name)
+    
+    for card_name in card_name_to_line.keys():
+        log(f"Llanowar scouts sighted {card_name} (x{card_quantities[card_name]})")
+        
+        card_data = get_cached_response(card_name)
         if not card_data:
             print(f"  Scout report: {card_name} is hiding from Scryfall intel")
             card_sets[card_name] = []
