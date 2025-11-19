@@ -48,11 +48,11 @@ Everything else (virtualenv, dependencies) is handled for you.
 4. **Optional: custom files and flags**  
    Pass a different card list or output file:
    ```bash
-  ./scout.sh my_cards.list      # writes sets_cards.md
-  ./scout.sh my_cards.list my_sets.md
-  ./scout.sh -q my_cards.list   # quiet mode
-  ./scout.sh -r my_cards.list   # regrow cache (force fresh data)
-  ./scout.sh -c my_cards.list   # sort sets chronologically by year
+   ./scout.sh my_cards.list      # writes sets_cards.md
+   ./scout.sh my_cards.list my_sets.md
+   ./scout.sh -q my_cards.list   # quiet mode
+   ./scout.sh -r my_cards.list   # regrow cache (force fresh data)
+   ./scout.sh -c my_cards.list   # sort sets chronologically by year
    ```
 
 > 🧝 **Note:** Once the cache has the intel, you can re-run `convert_to_sets.py` alone to regenerate the Markdown without hitting the network.
