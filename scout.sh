@@ -67,12 +67,14 @@ if [ ! -d "$VENV_DIR" ]; then
     python3 -m venv "$VENV_DIR"
 fi
 
+VENV_PYTHON="$VENV_DIR/bin/python3"
+
 log "Rousing the Llanowar scouts (activating venv)..."
-source "$VENV_DIR/bin/activate"
+source "$VENV_DIR/bin/activate" || true
 
 log "Sharpening scout gear (installing dependencies)..."
-pip install -q --upgrade pip
-pip install -q -r requirements.txt
+"$VENV_PYTHON" -m pip install -q --upgrade pip
+"$VENV_PYTHON" -m pip install -q -r requirements.txt
 
 log "Sending scouts to map the multiverse (building cache)..."
 PYTHON_GENERATE_ARGS=("$INPUT_FILE")
@@ -82,7 +84,7 @@ fi
 if [ "$REGROW" -eq 1 ]; then
     PYTHON_GENERATE_ARGS+=("--regrow")
 fi
-python generate.py "${PYTHON_GENERATE_ARGS[@]}"
+"$VENV_PYTHON" generate.py "${PYTHON_GENERATE_ARGS[@]}"
 
 log "Recording set trails in $OUTPUT_FILE..."
 PYTHON_CONVERT_ARGS=("$INPUT_FILE" "$OUTPUT_FILE")
@@ -92,7 +94,5 @@ fi
 if [ "$CHRONOLOGICAL" -eq 1 ]; then
     PYTHON_CONVERT_ARGS+=("--chronological")
 fi
-python convert_to_sets.py "${PYTHON_CONVERT_ARGS[@]}"
-
-deactivate
+"$VENV_PYTHON" convert_to_sets.py "${PYTHON_CONVERT_ARGS[@]}"
 
