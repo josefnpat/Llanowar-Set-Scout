@@ -44,6 +44,26 @@ def save_cached_printings(card_name, printings_data):
     with open(cache_file, 'w', encoding='utf-8') as f:
         json.dump(printings_data, f, indent=2, ensure_ascii=False)
 
+def handle_rate_limit(response: requests.Response, retry_count: int = 0) -> bool:
+    """Handle rate limit responses with exponential backoff. Returns True if should retry."""
+    if response.status_code != 429:
+        return False
+    
+    max_retries = 5
+    if retry_count >= max_retries:
+        print(f"  Rate limit exceeded after {max_retries} retries. Please wait and try again later.")
+        return False
+    
+    retry_after = response.headers.get('Retry-After')
+    if retry_after:
+        wait_time = int(retry_after)
+    else:
+        wait_time = min(2 ** retry_count, 60)
+    
+    log(f"  Rate limited by Scryfall. Waiting {wait_time} seconds before retry {retry_count + 1}/{max_retries}...")
+    time.sleep(wait_time)
+    return True
+
 def query_scryfall_batch(card_names):
     """Query multiple cards at once using Scryfall's collection endpoint."""
     if not card_names:
@@ -53,44 +73,56 @@ def query_scryfall_batch(card_names):
     identifiers = [{"name": name} for name in card_names]
     payload = {"identifiers": identifiers}
     
-    try:
-        response = requests.post(url, json=payload)
-        response.raise_for_status()
-        data = response.json()
-        
-        results = {}
-        not_found = set(card_names)
-        card_names_lower = {name.lower(): name for name in card_names}
-        
-        for card_data in data.get('data', []):
-            returned_name = card_data.get('name', '')
-            if not returned_name:
-                continue
+    retry_count = 0
+    while retry_count < 5:
+        try:
+            response = requests.post(url, json=payload)
             
-            returned_lower = returned_name.lower()
-            matched_original = None
+            if response.status_code == 429:
+                if handle_rate_limit(response, retry_count):
+                    retry_count += 1
+                    continue
+                else:
+                    return {}
             
-            for query_lower, query_original in card_names_lower.items():
-                if query_lower == returned_lower or query_lower in returned_lower or returned_lower in query_lower:
-                    matched_original = query_original
-                    break
+            response.raise_for_status()
+            data = response.json()
             
-            if matched_original:
-                results[matched_original] = card_data
-                save_cached_response(matched_original, card_data)
-                not_found.discard(matched_original)
-            else:
-                results[returned_name] = card_data
-                save_cached_response(returned_name, card_data)
-        
-        for card_name in not_found:
-            log(f"  Card not found in batch: {card_name}")
-        
-        time.sleep(0.1)
-        return results
-    except requests.exceptions.RequestException as e:
-        print(f"Error in batch query: {e}")
-        return {}
+            results = {}
+            not_found = set(card_names)
+            card_names_lower = {name.lower(): name for name in card_names}
+            
+            for card_data in data.get('data', []):
+                returned_name = card_data.get('name', '')
+                if not returned_name:
+                    continue
+                
+                returned_lower = returned_name.lower()
+                matched_original = None
+                
+                for query_lower, query_original in card_names_lower.items():
+                    if query_lower == returned_lower or query_lower in returned_lower or returned_lower in query_lower:
+                        matched_original = query_original
+                        break
+                
+                if matched_original:
+                    results[matched_original] = card_data
+                    save_cached_response(matched_original, card_data)
+                    not_found.discard(matched_original)
+                else:
+                    results[returned_name] = card_data
+                    save_cached_response(returned_name, card_data)
+            
+            for card_name in not_found:
+                log(f"  Card not found in batch: {card_name}")
+            
+            time.sleep(0.1)
+            return results
+        except requests.exceptions.RequestException as e:
+            print(f"Error in batch query: {e}")
+            return {}
+    
+    return {}
 
 def query_scryfall(card_name):
     """Query a single card (fallback for individual queries)."""
@@ -100,18 +132,30 @@ def query_scryfall(card_name):
     
     url = f"https://api.scryfall.com/cards/named?exact={quote(card_name)}"
     
-    try:
-        response = requests.get(url)
-        response.raise_for_status()
-        data = response.json()
-        
-        save_cached_response(card_name, data)
-        time.sleep(0.1)
-        
-        return data
-    except requests.exceptions.RequestException as e:
-        print(f"Error querying {card_name}: {e}")
-        return None
+    retry_count = 0
+    while retry_count < 5:
+        try:
+            response = requests.get(url)
+            
+            if response.status_code == 429:
+                if handle_rate_limit(response, retry_count):
+                    retry_count += 1
+                    continue
+                else:
+                    return None
+            
+            response.raise_for_status()
+            data = response.json()
+            
+            save_cached_response(card_name, data)
+            time.sleep(0.1)
+            
+            return data
+        except requests.exceptions.RequestException as e:
+            print(f"Error querying {card_name}: {e}")
+            return None
+    
+    return None
 
 def get_all_printings(card_data, card_name):
     if not card_data or 'prints_search_uri' not in card_data:
@@ -124,11 +168,21 @@ def get_all_printings(card_data, card_name):
     prints_url = card_data['prints_search_uri']
     all_sets = []
     
+    retry_count = 0
     while prints_url:
         try:
             response = requests.get(prints_url)
+            
+            if response.status_code == 429:
+                if handle_rate_limit(response, retry_count):
+                    retry_count += 1
+                    continue
+                else:
+                    break
+            
             response.raise_for_status()
             data = response.json()
+            retry_count = 0
             
             for card in data.get('data', []):
                 set_name = card.get('set_name', '')
