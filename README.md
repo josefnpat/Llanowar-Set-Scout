@@ -24,7 +24,7 @@ Everything else (virtualenv, dependencies) is handled for you.
 1. **Clone the repo**  
    ```bash
    git clone https://github.com/you/llanowar-set-scout.git
-   cd Llanowar-Set-Scout
+   cd llanowar-set-scout
    ```
 
 2. **Edit your card list**  
